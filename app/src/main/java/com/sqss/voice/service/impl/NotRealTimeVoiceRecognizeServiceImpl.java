@@ -15,6 +15,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -36,8 +37,9 @@ import com.sqss.voice.util.SliceIdGenerator;
 public class NotRealTimeVoiceRecognizeServiceImpl implements NotRealTimeVoiceRecognizeService {
 	protected Logger logger =  LoggerFactory.getLogger(this.getClass());
 	
-	//Save the uploaded file to this folder
-    private static String UPLOADED_FOLDER = "E://Temp//";
+	//Save the ASR result
+	@Value("${asr.result.folder}")
+    private String ASR_RESULT_FOLDER;
 	
 	@Autowired
 	private AudioRepository audioRepository;
@@ -252,7 +254,7 @@ public class NotRealTimeVoiceRecognizeServiceImpl implements NotRealTimeVoiceRec
 	        }
 	        
 	        String rst = response.getData();
-	        Path path = Paths.get(UPLOADED_FOLDER + audio.getId() + ".txt");
+	        Path path = Paths.get(ASR_RESULT_FOLDER + audio.getId() + ".txt");
             Files.write(path, rst.getBytes());
             audioRepository.setStatusAndResultFullPath(5, path.toString(), audio.getId());
             logger.info("获得转写结果: " + audio.getId());

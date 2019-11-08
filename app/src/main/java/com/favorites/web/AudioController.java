@@ -1,5 +1,6 @@
 package com.favorites.web;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -9,6 +10,7 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,7 +37,8 @@ public class AudioController extends BaseController{
 	private AudioRepository audioRepository;
 	
 	//Save the uploaded file to this folder
-    private static String UPLOADED_FOLDER = "E://Temp//";
+	@Value("${voice.upload.folder}")
+    private String VOICE_UPLOADED_FOLDER;
 	
     @RequestMapping(value="/list")
 	@LoggerManage(description="录音转写")
@@ -57,7 +60,7 @@ public class AudioController extends BaseController{
 		try {
 			// Get the file and save it somewhere
             byte[] bytes = audioFile.getBytes();
-            Path path = Paths.get(UPLOADED_FOLDER + audioFile.getOriginalFilename());
+            Path path = Paths.get(VOICE_UPLOADED_FOLDER + audioFile.getOriginalFilename());
             Files.write(path, bytes);
             
             Audio audio = new Audio(path.toString(), DateUtils.getCurrentTime());
