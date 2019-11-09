@@ -16,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -34,7 +36,7 @@ import com.sqss.voice.util.SliceIdGenerator;
 
 @Service
 @EnableAsync  //开启基于注解的异步调用功能
-public class NotRealTimeVoiceRecognizeServiceImpl implements NotRealTimeVoiceRecognizeService {
+public class NotRealTimeVoiceRecognizeServiceImpl implements NotRealTimeVoiceRecognizeService, ApplicationRunner  {
 	protected Logger logger =  LoggerFactory.getLogger(this.getClass());
 	
 	//Save the ASR result
@@ -64,8 +66,18 @@ public class NotRealTimeVoiceRecognizeServiceImpl implements NotRealTimeVoiceRec
      */
     public static final int SLICE_SICE = 10485760;// 10M
     
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+    	 File file = new File(ASR_RESULT_FOLDER);
+         if (!file.exists()) {
+             file.mkdirs();
+             logger.info("making directory: " + ASR_RESULT_FOLDER);
+         }
+    }
+
+    
     /**
-     * 获取每个接口都必须的鉴权参数
+          * 获取每个接口都必须的鉴权参数
      * 
      * @return
      * @throws SignatureException 

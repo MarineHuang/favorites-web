@@ -11,6 +11,8 @@ import java.util.Map.Entry;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,13 +34,22 @@ import com.sqss.voice.repository.AudioRepository;
 
 @Controller
 @RequestMapping("/audio")
-public class AudioController extends BaseController{
+public class AudioController extends BaseController implements ApplicationRunner{
 	@Autowired
 	private AudioRepository audioRepository;
 	
 	//Save the uploaded file to this folder
 	@Value("${voice.upload.folder}")
     private String VOICE_UPLOADED_FOLDER;
+	
+	 @Override
+    public void run(ApplicationArguments args) throws Exception {
+    	 File file = new File(VOICE_UPLOADED_FOLDER);
+         if (!file.exists()) {
+             file.mkdirs();
+             logger.info("making directory: " + VOICE_UPLOADED_FOLDER);
+         }
+    }
 	
     @RequestMapping(value="/list")
 	@LoggerManage(description="录音转写")
