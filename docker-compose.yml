@@ -33,6 +33,7 @@ services:
       - ./app:/app
       - ~/.m2:/root/.m2
       - /tmp/logs:/usr/local/logs
+      - /tmp/audio:/tmp/audio
     expose:
       - "8080"
     command: mvn clean spring-boot:run -Drun.profiles=docker
