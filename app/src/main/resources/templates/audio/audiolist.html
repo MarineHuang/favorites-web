@@ -50,7 +50,7 @@
 						<td th:text="${#dates.format(audio.uploadTime, 'yyyy/MM/dd HH:mm')}"></td>
 						<td th:text="${audio.status}"></td>
 						<td th:text="${audio.taskId}"></td>
-						<td th:text="${audio.resultFullPath}"></td>
+						<td><a th:href="@{'/audio/download?audioId='+${audio.id}}" >下载</a></td>
 					</tr>
 				</tbody>
 				</table>
@@ -89,6 +89,7 @@
 		  }
 		  count++;
 	  });
+	 
   });
  </script>
 </html>
