@@ -5,13 +5,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -37,12 +42,19 @@ import com.favorites.utils.DateUtils;
 import com.favorites.utils.HtmlUtil;
 import com.sqss.voice.entity.Audio;
 import com.sqss.voice.repository.AudioRepository;
+import com.sqss.voice.service.NotRealTimeVoiceRecognizeService;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 
 @Controller
 @RequestMapping("/audio")
 public class AudioController extends BaseController implements ApplicationRunner{
 	@Autowired
 	private AudioRepository audioRepository;
+	@Autowired
+	private NotRealTimeVoiceRecognizeService nrtVoiceRecognizeService;
 	
 	//Save the uploaded file to this folder
 	@Value("${voice.upload.folder}")
@@ -93,14 +105,17 @@ public class AudioController extends BaseController implements ApplicationRunner
 	 * 下载转写结果
 	 *
 	 */
-	@RequestMapping(value="/download", method = RequestMethod.GET)
-	@LoggerManage(description="下载转写结果操作")
-	public String downLoad(@RequestParam("audioId") Long audioId, HttpServletResponse response){
+	@RequestMapping(value="/getVoiceText/json", method = RequestMethod.GET)
+	@LoggerManage(description="下载音频转写结果json")
+	public String getVoiceTextJson(@RequestParam("audioId") Long audioId, HttpServletResponse response){
 		Audio audio = audioRepository.findById(audioId).get();
+		if(audio.getStatus() < 5) {
+			logger.warn("音频还没有转写完成");
+			return null;
+		}
 		String path = audio.getResultFullPath();
 		File file = new File(path);
 		String filename = file.getName();
-		//判断文件父目录是否存在
 		if(file.exists()){
 			response.setHeader("content-type", "application/octet-stream");
 			response.setContentType("application/octet-stream");
@@ -111,13 +126,9 @@ public class AudioController extends BaseController implements ApplicationRunner
 			BufferedInputStream bis = null;
 			OutputStream os = null;
 			try {
-			 // 获取响应对象的输出流
 			 os = response.getOutputStream();
-			 // 文件输入流
 			 fis = new FileInputStream(file);
-			 // 缓存输入流
 			 bis = new BufferedInputStream(fis);
-			 // 数组从输入流缓存读取数据,返回数据是读取的byte个数
 			 int i = bis.read(buffer);
 			 while(i != -1){
 			     os.write(buffer, 0, i);
@@ -139,4 +150,78 @@ public class AudioController extends BaseController implements ApplicationRunner
 		return null;
 	}
 
+	
+	
+	
+	/**
+	 * 下载转写结果
+	 *
+	 */
+	@RequestMapping(value="/getVoiceText/text", method = RequestMethod.GET)
+	@LoggerManage(description="下载音频转写结果text")
+	public String getVoiceTextText(@RequestParam("audioId") Long audioId, HttpServletResponse response){
+		Audio audio = audioRepository.findById(audioId).get();
+		if(audio.getStatus() < 5) {
+			logger.warn("音频还没有转写完成");
+			return null;
+		}
+		String onebestResult = nrtVoiceRecognizeService.formatResult(audio);
+		//response.setCharacterEncoding("UTF-8");
+		response.setHeader("content-type", "application/octet-stream");
+		response.setContentType("application/octet-stream");
+		response.setHeader("Content-Disposition", "attachment;filename=onebest.txt");
+		
+		OutputStream os = null;
+		try {
+			os = response.getOutputStream();
+		 	os.write(onebestResult.getBytes());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		try {
+			os.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	@RequestMapping(value="/getVoiceText/word", method = RequestMethod.GET)
+	@LoggerManage(description="下载音频转写结果word")
+    public String getVoiceTextWord(@RequestParam("audioId") Long audioId, HttpServletResponse response){
+		Audio audio = audioRepository.findById(audioId).get();
+		if(audio.getStatus() < 5) {
+			logger.warn("音频还没有转写完成");
+			return null;
+		}
+		String onebestResult = nrtVoiceRecognizeService.formatResult(audio);
+		
+		response.setHeader("content-Type", "application/msword");
+        response.setContentType("application/octet-stream;charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment;filename=test.doc");
+        response.addHeader("Pargam", "no-cache");
+        response.addHeader("Cache-Control", "no-cache");
+        // 创建一个FreeMarker实例, 负责管理FreeMarker模板的Configuration实例
+        Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
+        // 指定FreeMarker模板文件的位置
+        cfg.setClassForTemplateLoading(getClass(), "/templates/audio");
+        Template template = null;
+        try {
+            template = cfg.getTemplate("string.ftl","UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("string", onebestResult);
+        
+        try {
+            template.process(data, new OutputStreamWriter(response.getOutputStream()));
+        } catch (TemplateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

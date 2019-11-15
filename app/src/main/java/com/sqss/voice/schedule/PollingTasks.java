@@ -44,6 +44,10 @@ public class PollingTasks {
     			logger.info("audio: " + audio.getFileFullPath() + " to getResult...");
     			nrtVoiceRecognizeService.getResult(audio);
     			break;
+//    		case 5:
+//    			logger.info("audio: " + audio.getFileFullPath() + " to formatResult...");
+//    			nrtVoiceRecognizeService.formatResult(audio);
+//    			break;
     		default:
     			
     		}

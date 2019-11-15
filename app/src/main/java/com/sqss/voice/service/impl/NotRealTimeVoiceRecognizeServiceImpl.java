@@ -2,6 +2,7 @@ package com.sqss.voice.service.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +32,7 @@ import com.sqss.voice.service.NotRealTimeVoiceRecognizeService;
 import com.sqss.voice.util.ApiResultDto;
 import com.sqss.voice.util.EncryptUtil;
 import com.sqss.voice.util.HttpUtil;
+import com.sqss.voice.util.IflytekVoiceResult;
 import com.sqss.voice.util.SliceIdGenerator;
 
 
@@ -115,19 +117,23 @@ public class NotRealTimeVoiceRecognizeServiceImpl implements NotRealTimeVoiceRec
         prepareParam.put("slice_num", (fileLenth/SLICE_SICE) + (fileLenth % SLICE_SICE == 0 ? 0 : 1) + "");
 
         /********************TODO 可配置参数********************/
-        // 转写类型
-//        prepareParam.put("lfasr_type", "0");
-        // 开启分词
-//        prepareParam.put("has_participle", "true");
-        // 说话人分离
-//        prepareParam.put("has_seperate", "true");
-        // 设置多候选词个数
+        //语种 cn:中文（默认） en:英文（英文不支持热词
+        prepareParam.put("language", "cn");
+        // 转写类型，可选值： 0（标准版-已录制音频，格式包括 wav,flac,opus,mp3,m4a）， 2（电话专用版，已取消电话专用版套餐）,默认0
+        prepareParam.put("lfasr_type", "0");
+        // 转写结果是否包含分词信息
+        prepareParam.put("has_participle", "true");
+        // 转写结果中是否包含发音人分离信息
+        prepareParam.put("has_seperate", "false");
+        // 转写结果中最大的候选词个数
 //        prepareParam.put("max_alternatives", "2");
-        // 是否进行敏感词检出
+        //发音人个数，可选值：0-10，0表示盲分
+        prepareParam.put("speaker_number", "0");
+        // 是否进行敏感词检出, false或true， 默认：false
 //        prepareParam.put("has_sensitive", "true");
-        // 敏感词类型
+        // 敏感词类型 需要进行敏感词检测(has_sensitive为true)时必传，0(默认词库)或1(自定义敏感词)
 //        prepareParam.put("sensitive_type", "1");
-        // 关键词
+        // 自定义关键词，敏感词检测类型为1时必传，格式：科大讯飞，语音转写(每个词用英文逗号分割，整个字符串长度不超过256)
 //        prepareParam.put("keywords", "科大讯飞,中国");
         /****************************************************/
 
@@ -272,6 +278,45 @@ public class NotRealTimeVoiceRecognizeServiceImpl implements NotRealTimeVoiceRec
             logger.info("获得转写结果: " + audio.getId());
 	        
 	        return rst;
+		}catch (Exception e) {
+	        e.printStackTrace();
+	        return null;
+	    }
+	}
+	
+	
+	private String readString(String filePath) {
+		String str="";
+		File file=new File(filePath);
+		try {
+		 FileInputStream in=new FileInputStream(file);
+		 // size 为字串的长度 ，这里一次性读完
+		 int size=in.available();
+		 byte[] buffer=new byte[size];
+		 in.read(buffer);
+		 in.close();
+		 str=new String(buffer,"UTF-8");
+		} catch (IOException e) {
+			 // TODO Auto-generated catch block
+			e.printStackTrace(); 
+			return null;
+		}
+		return str;
+	}
+	
+	@Override
+	public String formatResult(Audio audio) {
+		try {
+			String resultPath = audio.getResultFullPath();
+			String jsonResult = readString(resultPath);
+			logger.info("JSON格式转写结果: " + jsonResult);
+			IflytekVoiceResult voiceResult = new IflytekVoiceResult(jsonResult);
+			String onebestResult = voiceResult.getOnebest();
+			logger.info("onebest转写结果: " + onebestResult);
+			//String simpleResult2 = voiceResult.getSimple2();
+			//logger.info("简单转写结果2: " + simpleResult2);
+			return onebestResult;
+			
 		}catch (Exception e) {
 	        e.printStackTrace();
 	        return null;

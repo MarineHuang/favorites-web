@@ -50,7 +50,8 @@
 						<td th:text="${#dates.format(audio.uploadTime, 'yyyy/MM/dd HH:mm')}"></td>
 						<td th:text="${audio.status}"></td>
 						<td th:text="${audio.taskId}"></td>
-						<td><a th:href="@{'/audio/download?audioId='+${audio.id}}" >下载</a></td>
+						<td><a th:if="${audio.status} ge 5" th:href="@{'/audio/getVoiceText/json?audioId='+${audio.id}}" >下载json</a></td>
+						<td><a th:if="${audio.status} ge 5" th:href="@{'/audio/getVoiceText/word?audioId='+${audio.id}}" >下载word</a></td>
 					</tr>
 				</tbody>
 				</table>
